@@ -16,7 +16,7 @@
 //   b1..b_M     – matrix B values, row-major, comma-separated (M = m*k)
 //
 // Dimensions are uniformly sampled from [dim_lower, dim_upper].
-// Matrix values are normally distributed ~ N(0, ⅓²), clamped to [-1, 1].
+// Matrix values are normally distributed ~ N(0, 1).
 // -----------------------------------------------------------------------
 
 namespace {

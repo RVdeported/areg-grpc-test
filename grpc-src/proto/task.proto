@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package taskdist;
+
+// ---------------------------------------------------------------------------
+// Messages
+// ---------------------------------------------------------------------------
+
+message WorkerInfo {
+  uint32 worker_id = 1;
+}
+
+message RegistrationResponse {
+  uint32 worker_id = 1;
+}
+
+message ArrayMultiplyTask {
+  uint32   task_id  = 1;
+  repeated double array_a = 2;
+  repeated double array_b = 3;
+  uint32   rows_a   = 4;
+  uint32   cols_a   = 5;
+  uint32   cols_b   = 6;
+}
+
+message TaskResult {
+  uint32   task_id   = 1;
+  uint32   worker_id = 2;
+  repeated double result = 3;
+  uint64   ts_rec = 4;
+  uint64   ts_tsk = 5;
+  uint64   ts_snd = 6;
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+service TaskDistributor {
+  rpc RegisterWorker (WorkerInfo) returns (RegistrationResponse);
+  rpc AssignTasks (stream TaskResult) returns (stream ArrayMultiplyTask);
+}
