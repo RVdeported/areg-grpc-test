@@ -17,6 +17,7 @@ ENDIF()
 # Project Settings:                                                           #
 #=============================================================================#
 SET(PROJ_NAME areg-backtest)
+set(CMAKE_CXX_STANDARD 23)
 PROJECT($PROJ_NAME LANGUAGES CXX)
 
 # Generate identity string for this build:
@@ -51,10 +52,14 @@ ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   SET(CXXFLAGS "-O0 -g")
 ELSE()
   MESSAGE(WARNING "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
+  SET(CXXFLAGS "-O0 -g")
 ENDIF()
+
+INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 
 #-----------------------------------------------------------------------------#
 # The benchmarks themselves                                                   #
 #-----------------------------------------------------------------------------#
-ADD_SUBDIRECTORY(areg-src)
+# ADD_SUBDIRECTORY(areg-src)
+ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(grpc-src)
