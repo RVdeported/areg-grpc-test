@@ -3,10 +3,12 @@
 #include <chrono>
 #include <cstdint>
 #include <fstream>
+#include <print>
 #include <vector>
+#include <ranges>
 namespace common
 {
-using I = unsigned int;
+using I = uint32_t;
 using F = double;
 
 // -----------------------------------------------------------------------
@@ -14,13 +16,12 @@ using F = double;
 // -----------------------------------------------------------------------
 struct Task
 {
-  I              n, m, k;
+  I n, m, k;
   std::vector<F> a; // n*m values, row-major
   std::vector<F> b; // m*k values, row-major
-  
-  Task(I n, I m, I k, 
-      std::vector<F> a, std::vector<F> b)
-    : n(n), m(m), k(k), a(a), b(b)
+
+  Task(I n, I m, I k, std::vector<F> a, std::vector<F> b)
+      : n(n), m(m), k(k), a(a), b(b)
   {
     assert(a.size() == n * m);
     assert(b.size() == m * k);
@@ -30,9 +31,10 @@ struct Task
 inline Task parse_task(const std::string & line)
 {
   std::stringstream ss(line);
-  std::string       token;
+  std::string token;
 
-  auto next = [&]() -> std::string {
+  auto next = [&]() -> std::string
+  {
     if (!std::getline(ss, token, '|'))
       throw std::runtime_error("parse_task: missing field in: " + line);
     return token;
@@ -47,18 +49,19 @@ inline Task parse_task(const std::string & line)
     throw std::runtime_error("parse_task: dimensions must be positive in: " +
                              line);
 
-  auto parse_values = [&](std::vector<F> & out, I expected) {
+  auto parse_values = [&](std::vector<F> & out, I expected)
+  {
     std::string field = next();
     std::stringstream fs(field);
-    std::string       val;
+    std::string val;
     while (std::getline(fs, val, ','))
     {
       out.push_back(std::stod(val));
     }
     if (out.size() != expected)
-      throw std::runtime_error(
-          "parse_task: expected " + std::to_string(expected) + " values, got " +
-          std::to_string(out.size()) + " in: " + line);
+      throw std::runtime_error("parse_task: expected " +
+                               std::to_string(expected) + " values, got " +
+                               std::to_string(out.size()) + " in: " + line);
   };
 
   parse_values(a, n * m);
@@ -67,7 +70,7 @@ inline Task parse_task(const std::string & line)
   if (std::getline(ss, token, '|'))
     throw std::runtime_error("parse_task: trailing fields in: " + line);
 
-  return Task(n, m ,k, a, b);
+  return Task(n, m, k, a, b);
 }
 
 inline std::vector<Task> read_tasks(const std::string & filename)
@@ -77,7 +80,7 @@ inline std::vector<Task> read_tasks(const std::string & filename)
     throw std::runtime_error("read_tasks: cannot open file: " + filename);
 
   std::vector<Task> tasks;
-  std::string       line;
+  std::string line;
   for (size_t lnum = 1; std::getline(in, line); ++lnum)
   {
     if (line.empty())
@@ -125,5 +128,42 @@ inline size_t ts()
   return std::chrono::duration_cast<std::chrono::microseconds>(
              std::chrono::high_resolution_clock::now().time_since_epoch())
       .count();
+}
+
+// -----------------------------------------------------------------------
+// CSV recorder — writes completed-task timings to disk
+// -----------------------------------------------------------------------
+struct TaskRecord
+{
+  I task_id;
+  I n, m, k;
+  size_t ts_srv_snd, ts_srv_rec, ts_cli_rec, ts_cli_tsk, ts_cli_snd;
+
+  void Validate() const
+  {
+    const auto v = {ts_srv_snd, ts_cli_rec, ts_cli_tsk, ts_cli_snd, ts_srv_rec};
+    for (auto tss : 
+        v | std::views::slide(2))
+    {
+      assert(tss[0] <= tss[1]);
+    }
+  }
+};
+
+inline void record_csv(const std::vector<TaskRecord> & records)
+{
+  std::ofstream out("out.csv");
+  if (!out)
+    throw std::runtime_error("record_csv: cannot open file: out.csv\n");
+  out << "task_id,n,m,k,ts_srv_snd,ts_srv_rec,ts_cli_rec,ts_cli_tsk,ts_cli_"
+         "snd\n";
+  for (const auto & r : records)
+  {
+    r.Validate();
+    std::print("{} {} {}\n", r.ts_cli_rec, r.ts_cli_tsk, r.ts_cli_snd);
+    out << r.task_id << ',' << r.n << ',' << r.m << ',' << r.k << ','
+        << r.ts_srv_snd << ',' << r.ts_srv_rec << ',' << r.ts_cli_rec << ','
+        << r.ts_cli_tsk << ',' << r.ts_cli_snd << '\n';
+  }
 }
 } // namespace common

@@ -27,22 +27,25 @@ using grpc::Status;
 // No worker state — results arrive inline on the bidi stream.
 // =======================================================================
 
-class Dispatcher
+struct Dispatcher
 {
-public:
   // XXX: Enque tasks. We expect the enque to be done once at the beginning
   void enqueue(ArrayMultiplyTask task)
   {
+    task_dims_.push_back({static_cast<common::I>(task.rows_a()),
+                          static_cast<common::I>(task.cols_a()),
+                          static_cast<common::I>(task.cols_b())});
     queue_.push_back(std::move(task));
   }
-  
+
   // Block until a task is available, or shutdown was requested.
   // Returns false when there is no more work.
   // XXX: Order not sequential and there is no memory release
   bool dequeue(ArrayMultiplyTask & task)
   {
     auto id = enqueued_.fetch_add(1, std::memory_order_relaxed);
-    if (id >= queue_.size()) return false;
+    if (id >= queue_.size())
+      return false;
     task = std::move(queue_[id]);
     return true;
   }
@@ -54,31 +57,29 @@ public:
 
   bool done()
   {
-    return completed_.load(std::memory_order_relaxed) >= queue_.size() || shutdown_;
+    return completed_.load(std::memory_order_relaxed) >= queue_.size() ||
+           shutdown_;
   }
 
-  void shutdown()
-  {
-    shutdown_.store(true); 
-  }
+  void shutdown() { shutdown_.store(true); }
 
   void wait_until_done()
   {
-    while(!done())
+    while (!done())
     {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
   }
 
-  size_t enqueued()  const { return queue_.size(); }
+  size_t enqueued() const { return queue_.size(); }
   size_t completed() const { return completed_.load(); }
 
-private:
   // XXX: for simplicity, we use the vector with no memory release
   std::vector<ArrayMultiplyTask> queue_;
-  std::atomic<size_t>            enqueued_{0};
-  std::atomic<size_t>            completed_{0};
-  std::atomic<bool>              shutdown_{false};
+  std::vector<std::array<common::I, 3>> task_dims_;
+  std::atomic<size_t> enqueued_{0};
+  std::atomic<size_t> completed_{0};
+  std::atomic<bool> shutdown_{false};
 };
 
 // =======================================================================
@@ -90,10 +91,10 @@ class TaskDistributorImpl final : public TaskDistributor::Service
 public:
   explicit TaskDistributorImpl(Dispatcher & dispatcher)
       : dispatcher_(dispatcher), ts_snd_rec(dispatcher.enqueued())
-  {}
+  {
+  }
 
-  Status RegisterWorker(ServerContext *              ctx,
-                        const WorkerInfo *           /*req*/,
+  Status RegisterWorker(ServerContext * ctx, const WorkerInfo * /*req*/,
                         RegistrationResponse * resp) override
   {
     auto wid = next_worker_id_.fetch_add(1, std::memory_order_relaxed);
@@ -104,7 +105,7 @@ public:
   }
 
   Status AssignTasks(
-      ServerContext *                                      ctx,
+      ServerContext * ctx,
       ServerReaderWriter<ArrayMultiplyTask, TaskResult> * stream) override
   {
     // --- first message identifies the worker ------------------------------
@@ -120,12 +121,12 @@ public:
     while (dispatcher_.dequeue(task))
     {
       std::print("[server] dispatching {} to {}\n", task.task_id(), wid);
-      
+
       size_t ts_snd = common::ts();
       if (!stream->Write(task))
       {
         std::print("[server] write to {} failed, stream broken\n", wid);
-        (void) failed.fetch_add(1, std::memory_order_relaxed);
+        (void)failed.fetch_add(1, std::memory_order_relaxed);
         dispatcher_.on_task_completed();
         return Status::OK;
       }
@@ -133,15 +134,21 @@ public:
       TaskResult result;
       if (!stream->Read(&result))
       {
-        std::print("[server] worker {} disconnected mid-task, {}\n",
-                   wid, task.task_id());
-        (void) failed.fetch_add(1, std::memory_order_relaxed);
+        std::print("[server] worker {} disconnected mid-task, {}\n", wid,
+                   task.task_id());
+        (void)failed.fetch_add(1, std::memory_order_relaxed);
         dispatcher_.on_task_completed();
         return Status::OK;
       }
       size_t ts_rec = common::ts();
-      // TODO: handle timings
-      ts_snd_rec[task.task_id()] = {ts_snd, ts_rec};
+      
+      // record timings
+      common::TaskRecord tss{task.task_id(), task.rows_a(),   task.cols_a(),
+                             task.cols_b(), ts_snd, ts_rec,  result.ts_rec(), result.ts_tsk(),
+                             result.ts_snd()};
+      
+      std::print("{} {} {}\n", result.ts_rec(), result.ts_tsk(), result.ts_snd());
+      ts_snd_rec[task.task_id()] = tss;
 
       dispatcher_.on_task_completed();
     }
@@ -150,21 +157,17 @@ public:
     return Status::OK;
   }
 
-private:
-  Dispatcher          & dispatcher_;
-  std::atomic<uint64_t> next_worker_id_{1};
-  std::vector<std::array<size_t, 2>> 
-                        ts_snd_rec;
-  std::atomic<uint64_t> failed{0};
-
+  Dispatcher & dispatcher_;
+  std::atomic<uint64_t>           next_worker_id_{1};
+  std::vector<common::TaskRecord> ts_snd_rec;
+  std::atomic<uint64_t>           failed{0};
 };
 
 // =======================================================================
 // Task loading
 // =======================================================================
 
-static std::vector<ArrayMultiplyTask>
-load_tasks(const std::string & filename)
+static std::vector<ArrayMultiplyTask> load_tasks(const std::string & filename)
 {
   auto raw = common::read_tasks(filename);
   std::print("[server] loaded {} tasks from '{}'\n", raw.size(), filename);
@@ -182,8 +185,10 @@ load_tasks(const std::string & filename)
     pt.set_cols_a(t.m);
     pt.set_cols_b(t.k);
 
-    for (auto v : t.a) pt.add_array_a(v);
-    for (auto v : t.b) pt.add_array_b(v);
+    for (auto v : t.a)
+      pt.add_array_a(v);
+    for (auto v : t.b)
+      pt.add_array_b(v);
 
     out.push_back(std::move(pt));
   }
@@ -203,7 +208,8 @@ static void usage(std::string_view prog)
 
 int main(int argc, char ** argv)
 {
-  if (argc < 2) usage(argv[0]);
+  if (argc < 2)
+    usage(argv[0]);
 
   const std::string task_file = argv[1];
   const std::string bind_addr =
@@ -217,7 +223,8 @@ int main(int argc, char ** argv)
   }
 
   Dispatcher dispatcher;
-  for (auto & t : tasks) dispatcher.enqueue(std::move(t));
+  for (auto & t : tasks)
+    dispatcher.enqueue(std::move(t));
   tasks.clear();
 
   std::print("[server] enqueued {} tasks, binding to {}\n",
@@ -241,6 +248,9 @@ int main(int argc, char ** argv)
 
   std::print("[server] all {} tasks completed, shutting down\n",
              dispatcher.completed());
+
+  // --- Build task-timing records and write CSV --------------------------
+  common::record_csv(service.ts_snd_rec);
 
   dispatcher.shutdown();
   server->Shutdown();
