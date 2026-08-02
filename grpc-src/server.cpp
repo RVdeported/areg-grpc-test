@@ -1,6 +1,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
+#include <filesystem>
 #include <print>
 #include <string>
 #include <string_view>
@@ -210,6 +211,9 @@ int main(int argc, char ** argv)
 {
   if (argc < 2)
     usage(argv[0]);
+
+  // Capture CWD before anything changes it.
+  common::g_output_dir = std::filesystem::current_path();
 
   const std::string task_file = argv[1];
   const std::string bind_addr =

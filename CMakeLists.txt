@@ -60,6 +60,6 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
 #-----------------------------------------------------------------------------#
 # The benchmarks themselves                                                   #
 #-----------------------------------------------------------------------------#
-# ADD_SUBDIRECTORY(areg-src)
+ADD_SUBDIRECTORY(areg-src)
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(grpc-src)

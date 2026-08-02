@@ -2,6 +2,7 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <print>
 #include <vector>
@@ -133,6 +134,11 @@ inline size_t ts()
 // -----------------------------------------------------------------------
 // CSV recorder — writes completed-task timings to disk
 // -----------------------------------------------------------------------
+
+// Set by main() before any framework initialization to capture the
+// original CWD (the "place of execution") in case the framework changes it.
+inline std::filesystem::path g_output_dir;
+
 struct TaskRecord
 {
   I task_id;
@@ -141,20 +147,26 @@ struct TaskRecord
 
   void Validate() const
   {
+#ifndef NDEBUG
     const auto v = {ts_srv_snd, ts_cli_rec, ts_cli_tsk, ts_cli_snd, ts_srv_rec};
-    for (auto tss : 
+    for (auto tss :
         v | std::views::slide(2))
     {
       assert(tss[0] <= tss[1]);
     }
+#endif
   }
 };
 
 inline void record_csv(const std::vector<TaskRecord> & records)
 {
-  std::ofstream out("out.csv");
+  auto path = g_output_dir.empty()
+                  ? std::filesystem::path("out.csv")
+                  : g_output_dir / "out.csv";
+  std::ofstream out(path);
   if (!out)
-    throw std::runtime_error("record_csv: cannot open file: out.csv\n");
+    throw std::runtime_error("record_csv: cannot open file: " +
+                             path.string() + "\n");
   out << "task_id,n,m,k,ts_srv_snd,ts_srv_rec,ts_cli_rec,ts_cli_tsk,ts_cli_"
          "snd\n";
   for (const auto & r : records)

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ServiceInterface FormatVersion="1.1.0">
+    <Overview ID="51" Name="Interface" Version="0.0.1" Category="Public">
+        <Description>A simple Master-Worker set-up. Worker should register itself and await tasks from the Master</Description>
+    </Overview>
+    <DataTypeList>
+        <DataType ID="56" Name="DArray" Type="Container">
+            <Container>Array</Container>
+            <BaseTypeValue>double</BaseTypeValue>
+            <Description/>
+        </DataType>
+    </DataTypeList>
+    <MethodList>
+        <Method ID="72" Name="RegisterWorker" MethodType="Request" Response="RegisterWorkerReply">
+            <Description/>
+        </Method>
+        <Method ID="75" Name="AssignTaskReply" MethodType="Response">
+            <Description/>
+            <ParamList>
+                <Parameter ID="88" Name="task_id" DataType="uint32">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="89" Name="array_a" DataType="DArray">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="90" Name="array_b" DataType="DArray">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="91" Name="rows_a" DataType="uint32">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="92" Name="cols_a" DataType="uint32">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="93" Name="cols_b" DataType="uint32">
+                    <Description/>
+                </Parameter>
+            </ParamList>
+        </Method>
+        <Method ID="77" Name="AssignTask" MethodType="Request" Response="AssignTaskReply">
+            <Description/>
+            <ParamList>
+                <Parameter ID="83" Name="worker_id" DataType="uint32">
+                    <Description/>
+                </Parameter>
+            </ParamList>
+        </Method>
+        <Method ID="94" Name="SubmitTask" MethodType="Request" Response="AssignTaskReply">
+            <Description/>
+            <ParamList>
+                <Parameter ID="95" Name="worker_id" DataType="uint32">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="96" Name="task_id" DataType="uint32">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="97" Name="result" DataType="DArray">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="98" Name="ts_rec" DataType="uint64">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="99" Name="ts_tsk" DataType="uint64">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="100" Name="ts_snd" DataType="uint64">
+                    <Description/>
+                </Parameter>
+            </ParamList>
+        </Method>
+        <Method ID="101" Name="RegisterWorkerReply" MethodType="Response">
+            <Description/>
+            <ParamList>
+                <Parameter ID="102" Name="worker_id" DataType="uint32">
+                    <Description/>
+                </Parameter>
+            </ParamList>
+        </Method>
+    </MethodList>
+</ServiceInterface>
