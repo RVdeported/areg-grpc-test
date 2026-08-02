@@ -151,7 +151,7 @@ struct TaskRecord
     const auto v = {ts_srv_snd, ts_cli_rec, ts_cli_tsk, ts_cli_snd, ts_srv_rec};
     for (int i = 1; i < v.size(); i++)
     {
-      assert(v[i-1] <= v[i]);
+      assert(v.begin() + i - 1 <= v.begin() + i);
     }
 #endif
   }
