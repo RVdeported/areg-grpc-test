@@ -149,10 +149,9 @@ struct TaskRecord
   {
 #ifndef NDEBUG
     const auto v = {ts_srv_snd, ts_cli_rec, ts_cli_tsk, ts_cli_snd, ts_srv_rec};
-    for (auto tss :
-        v | std::views::slide(2))
+    for (int i = 1; i < v.size(); i++)
     {
-      assert(tss[0] <= tss[1]);
+      assert(v[i-1] <= v[i]);
     }
 #endif
   }
