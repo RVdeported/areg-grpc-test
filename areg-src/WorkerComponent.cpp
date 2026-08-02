@@ -2,7 +2,7 @@
 #include "areg/appbase/Application.hpp"
 #include "common/utils.hpp"
 
-#include <print>
+#include <cstdio>
 #include <sched.h>
 
 WorkerComponent::WorkerComponent(const areg::ComponentEntry & entry,
@@ -26,12 +26,12 @@ bool WorkerComponent::service_connected(areg::ServiceConnectionState status,
     result = true;
     if (areg::is_service_connected(status))
     {
-      std::print("[worker] connected to master, registering\n");
+      std::printf("[worker] connected to master, registering\n");
       request_RegisterWorker();
     }
     else
     {
-      std::print("[worker] disconnected from master\n");
+      std::printf("[worker] disconnected from master\n");
       areg::Application::signal_quit();
     }
   }
@@ -51,7 +51,7 @@ void WorkerComponent::response_AssignTaskReply(uint32_t task_id,
                                                uint32_t cols_b)
 {
   size_t ts_rec = common::ts();
-  std::print("[worker {}] received task assignment\n", mWorkerId);
+  std::printf("[worker %u] received task assignment\n", mWorkerId);
 
   auto res =
       common::multiply(arr_a.data(), arr_b.data(), rows_a, cols_a, cols_b);

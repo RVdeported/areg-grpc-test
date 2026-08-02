@@ -2,7 +2,6 @@
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
-#include <print>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -99,7 +98,7 @@ public:
                         RegistrationResponse * resp) override
   {
     auto wid = next_worker_id_.fetch_add(1, std::memory_order_relaxed);
-    std::print("[server] registered {}\n", wid);
+    std::printf("[server] registered %lu\n", wid);
 
     resp->set_worker_id(wid);
     return Status::OK;
@@ -115,18 +114,18 @@ public:
       return Status::OK;
 
     const auto wid = init.worker_id();
-    std::print("[server] worker {} opened bidi stream\n", wid);
+    std::printf("[server] worker %d opened bidi stream\n", wid);
 
     // --- dispatch loop: write task → read result → repeat ----------------
     ArrayMultiplyTask task;
     while (dispatcher_.dequeue(task))
     {
-      std::print("[server] dispatching {} to {}\n", task.task_id(), wid);
+      std::printf("[server] dispatching %d to %d\n", task.task_id(), wid);
 
       size_t ts_snd = common::ts();
       if (!stream->Write(task))
       {
-        std::print("[server] write to {} failed, stream broken\n", wid);
+        std::printf("[server] write to %d failed, stream broken\n", wid);
         (void)failed.fetch_add(1, std::memory_order_relaxed);
         dispatcher_.on_task_completed();
         return Status::OK;
@@ -135,7 +134,7 @@ public:
       TaskResult result;
       if (!stream->Read(&result))
       {
-        std::print("[server] worker {} disconnected mid-task, {}\n", wid,
+        std::printf("[server] worker %d disconnected mid-task, %d\n", wid,
                    task.task_id());
         (void)failed.fetch_add(1, std::memory_order_relaxed);
         dispatcher_.on_task_completed();
@@ -148,13 +147,12 @@ public:
                              task.cols_b(), ts_snd, ts_rec,  result.ts_rec(), result.ts_tsk(),
                              result.ts_snd()};
       
-      std::print("{} {} {}\n", result.ts_rec(), result.ts_tsk(), result.ts_snd());
       ts_snd_rec[task.task_id()] = tss;
 
       dispatcher_.on_task_completed();
     }
 
-    std::print("[server] worker {} stream finished (no more tasks)\n", wid);
+    std::printf("[server] worker %d stream finished (no more tasks)\n", wid);
     return Status::OK;
   }
 
@@ -171,7 +169,7 @@ public:
 static std::vector<ArrayMultiplyTask> load_tasks(const std::string & filename)
 {
   auto raw = common::read_tasks(filename);
-  std::print("[server] loaded {} tasks from '{}'\n", raw.size(), filename);
+  std::printf("[server] loaded %zu tasks from '%s'\n", raw.size(), filename.c_str());
 
   std::vector<ArrayMultiplyTask> out;
   out.reserve(raw.size());
@@ -203,7 +201,7 @@ static std::vector<ArrayMultiplyTask> load_tasks(const std::string & filename)
 
 static void usage(std::string_view prog)
 {
-  std::println(stderr, "usage: {} <task_file> [bind_address]", prog);
+  std::printf("usage: %s <task_file> [bind_address]\n", prog.data());
   std::exit(1);
 }
 
@@ -222,7 +220,7 @@ int main(int argc, char ** argv)
   auto tasks = load_tasks(task_file);
   if (tasks.empty())
   {
-    std::println(stderr, "[server] no tasks to distribute, exiting");
+    std::printf("[server] no tasks to distribute, exiting\n");
     return 0;
   }
 
@@ -231,8 +229,8 @@ int main(int argc, char ** argv)
     dispatcher.enqueue(std::move(t));
   tasks.clear();
 
-  std::print("[server] enqueued {} tasks, binding to {}\n",
-             dispatcher.enqueued(), bind_addr);
+  std::printf("[server] enqueued %zu tasks, binding to %s\n",
+             dispatcher.enqueued(), bind_addr.c_str());
 
   TaskDistributorImpl service(dispatcher);
 
@@ -243,14 +241,14 @@ int main(int argc, char ** argv)
   std::unique_ptr<Server> server(builder.BuildAndStart());
   if (!server)
   {
-    std::println(stderr, "[server] failed to start on {}", bind_addr);
+    std::printf("[server] failed to start on %s\n", bind_addr.c_str());
     return 1;
   }
-  std::print("[server] listening on {}\n", bind_addr);
+  std::printf("[server] listening on %s\n", bind_addr.c_str());
 
   dispatcher.wait_until_done();
 
-  std::print("[server] all {} tasks completed, shutting down\n",
+  std::printf("[server] all %zu tasks completed, shutting down\n",
              dispatcher.completed());
 
   // --- Build task-timing records and write CSV --------------------------

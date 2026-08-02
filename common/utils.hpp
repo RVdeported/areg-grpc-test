@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <print>
+#include <cstdio>
 #include <vector>
 #include <ranges>
 namespace common
@@ -172,7 +172,7 @@ inline void record_csv(const std::vector<TaskRecord> & records)
   for (const auto & r : records)
   {
     r.Validate();
-    std::print("{} {} {}\n", r.ts_cli_rec, r.ts_cli_tsk, r.ts_cli_snd);
+    std::printf("%lu %lu %lu\n", r.ts_cli_rec, r.ts_cli_tsk, r.ts_cli_snd);
     out << r.task_id << ',' << r.n << ',' << r.m << ',' << r.k << ','
         << r.ts_srv_snd << ',' << r.ts_srv_rec << ',' << r.ts_cli_rec << ','
         << r.ts_cli_tsk << ',' << r.ts_cli_snd << '\n';

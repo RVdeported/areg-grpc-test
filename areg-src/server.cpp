@@ -9,7 +9,7 @@
 
 #include <cstdlib>
 #include <filesystem>
-#include <print>
+#include <cstdio>
 #include <string_view>
 #include <vector>
 
@@ -32,7 +32,7 @@ END_MODEL(_modelName)
 
 static void usage(std::string_view prog)
 {
-  std::println(stderr, "usage: {} <task_file>", prog);
+  std::fprintf(stderr, "usage: %s <task_file>\n", prog.data());
   std::exit(1);
 }
 

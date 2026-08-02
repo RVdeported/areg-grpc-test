@@ -17,7 +17,7 @@ ENDIF()
 # Project Settings:                                                           #
 #=============================================================================#
 SET(PROJ_NAME areg-backtest)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 PROJECT($PROJ_NAME LANGUAGES CXX)
 
 # Generate identity string for this build:

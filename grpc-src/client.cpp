@@ -1,6 +1,6 @@
 #include <chrono>
 #include <iostream>
-#include <print>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -39,12 +39,12 @@ int main(int argc, char * argv[])
     Status st = stub->RegisterWorker(&ctx, info, &resp);
     if (!st.ok())
     {
-      std::print(std::cerr, "[client] registration failed: {}\n",
-                 st.error_message());
+      std::fprintf(stderr, "[client] registration failed: %s\n",
+                 st.error_message().c_str());
       return 1;
     }
     worker_id = resp.worker_id();
-    std::print("[client {}] registered\n", worker_id);
+    std::printf("[client %u] registered\n", worker_id);
   }
 
   // -- open bidi stream ----------------------------------------------------
@@ -57,20 +57,20 @@ int main(int argc, char * argv[])
     ready.set_worker_id(worker_id);
     if (!stream->Write(ready))
     {
-      std::print(std::cerr, "[client {}] failed to send initial message\n",
+      std::fprintf(stderr, "[client %u] failed to send initial message\n",
                  worker_id);
       return 1;
     }
   }
 
-  std::print("[client {}] accepting tasks\n", worker_id);
+  std::printf("[client %u] accepting tasks\n", worker_id);
 
   // -- process tasks -------------------------------------------------------
   taskdist::ArrayMultiplyTask task;
   while (stream->Read(&task))
   {
     size_t ts_rec = common::ts();
-    std::print("[client {}] received {}\n", worker_id, task.task_id());
+    std::printf("[client %u] received %d\n", worker_id, task.task_id());
   
     // XXX: do not care about excessive coping, etc
     std::vector<double> a(task.array_a().begin(), task.array_a().end());
@@ -90,15 +90,15 @@ int main(int argc, char * argv[])
 
     if (!stream->Write(tr))
     {
-      std::print(std::cerr, "[client {}] write failed, stream broken\n",
+      std::fprintf(stderr, "[client %u] write failed, stream broken\n",
           worker_id);
       break;
     }
-    std::print("[client {}] submitted result for {}\n", worker_id,
+    std::printf("[client %u] submitted result for %d\n", worker_id,
                task.task_id());
   }
 
   Status st = stream->Finish();
-  std::print("[client {}] stream closed: {}\n", worker_id, st.error_message());
+  std::printf("[client %u] stream closed: %s\n", worker_id, st.error_message().c_str());
   return 0;
 }

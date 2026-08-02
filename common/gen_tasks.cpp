@@ -1,8 +1,6 @@
 #include <cassert>
+#include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <print>
 #include <random>
 #include <string_view>
 #include "utils.hpp"
@@ -22,9 +20,9 @@
 namespace {
 static void usage(std::string_view prog)
 {
-  std::println(stderr,
-               "usage: {} <num_samples> <dim_lower> <dim_upper> [output_file]",
-               prog);
+  std::fprintf(stderr,
+               "usage: %s <num_samples> <dim_lower> <dim_upper> [output_file]\n",
+               prog.data());
   std::exit(1);
 }
 }
@@ -42,27 +40,25 @@ int main(int argc, char ** argv)
   I dim_upper = static_cast<I>(std::stoul(argv[3]));
   if (dim_lower < 1 || dim_lower > dim_upper) [[unlikely]]
   {
-    std::println(stderr, "error: 1 <= dim_lower <= dim_upper required");
+    std::fprintf(stderr, "error: 1 <= dim_lower <= dim_upper required\n");
     return 1;
   }
 
   if (dim_upper > MAX_D) [[unlikely]]
   {
-    std::println(stderr, "error: Max dim is {}", MAX_D);
+    std::fprintf(stderr, "error: Max dim is %u\n", MAX_D);
     return 1;
   }
 
-  std::ofstream fout;
-  std::ostream * out = &std::cout;
+  FILE * out = stdout;
   if (argc >= 5)
   {
-    fout.open(argv[4]);
-    if (!fout)
+    out = std::fopen(argv[4], "w");
+    if (!out)
     {
-      std::println(stderr, "error: cannot open '{}' for writing", argv[4]);
+      std::fprintf(stderr, "error: cannot open '%s' for writing\n", argv[4]);
       return 1;
     }
-    out = &fout;
   }
 
   std::mt19937_64 rng{std::random_device{}()};
@@ -78,28 +74,31 @@ int main(int argc, char ** argv)
     const I a_size = n * m;
     const I b_size = m * k;
 
-    std::print(*out, "{}|{}|{}|", n, m, k);
+    std::fprintf(out, "%u|%u|%u|", n, m, k);
 
     // matrix A
     for (I i = 0; i < a_size; ++i)
     {
       if (i > 0)
-        std::print(*out, ",");
-      std::print(*out, "{:.9f}", val_dist(rng));
+        std::fprintf(out, ",");
+      std::fprintf(out, "%.9f", val_dist(rng));
     }
 
-    std::print(*out, "|");
+    std::fprintf(out, "|");
 
     // matrix B
     for (I i = 0; i < b_size; ++i)
     {
       if (i > 0)
-        std::print(*out, ",");
-      std::print(*out, "{:.9f}", val_dist(rng));
+        std::fprintf(out, ",");
+      std::fprintf(out, "%.9f", val_dist(rng));
     }
 
-    std::println(*out, "");
+    std::fprintf(out, "\n");
   }
+
+  if (out != stdout)
+    std::fclose(out);
 
   return 0;
 }
