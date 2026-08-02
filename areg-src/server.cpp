@@ -47,7 +47,7 @@ int main(int argc, char ** argv)
   // Pre-load tasks into static pool before model init.
   gMasterTasks = common::read_tasks(argv[1]);
 
-  areg::Application::setup();
+  areg::Application::setup(true, true, true, true, true, (std::string(common::g_output_dir.c_str()) + "/areg.init").c_str());
   areg::Application::load_model(_modelName);
   areg::Application::wait_quit(areg::WAIT_INFINITE);
   areg::Application::unload_model(_modelName);
