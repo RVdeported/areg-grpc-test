@@ -40,10 +40,10 @@ int main(int argc, char ** argv)
 {
   if (argc < 2)
     usage(argv[0]);
-  common::g_output_file = argc >= 2 ? argv[1] : "areg_out.csv";
 
   // Capture CWD before the framework potentially changes it.
   common::g_output_dir = std::filesystem::current_path();
+  common::g_output_file = argc > 2 ? argv[2] : "areg_out.csv";
 
   // Pre-load tasks into static pool before model init.
   gMasterTasks = common::read_tasks(argv[1]);

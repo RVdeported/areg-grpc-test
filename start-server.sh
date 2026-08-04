@@ -12,7 +12,7 @@ WORK_CONFIG="$CONFIG_TEMPLATE"
 # ── defaults ──────────────────────────────────────────────────
 TRANSPORT="areg"
 TASK_FILE="tasks.txt"
-NUM_SAMPLES="100"
+NUM_SAMPLES=""
 DIM_LOWER="1"
 DIM_UPPER="10"
 BIND_ADDRESS="localhost:50000"     
@@ -108,7 +108,7 @@ if [[ "$TRANSPORT" == "areg" ]]; then
 
   # Start the message router in the background.
   echo "Starting mtrouter …"
-  "$MTROUTER" --load="$WORK_CONFIG" -t &
+  "$MTROUTER" --load="$WORK_CONFIG" -t --service &
   MTROUTER_PID=$!
 
   # Give the router a moment to bind.

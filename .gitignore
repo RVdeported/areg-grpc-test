@@ -3,3 +3,7 @@ build/
 *.txt
 .cache
 *.csv
+__pycache__/
+samples/
+config/
+*.swp

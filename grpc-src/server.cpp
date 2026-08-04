@@ -145,7 +145,7 @@ public:
       // record timings
       common::TaskRecord tss{task.task_id(), task.rows_a(),   task.cols_a(),
                              task.cols_b(), ts_snd, ts_rec,  result.ts_rec(), result.ts_tsk(),
-                             result.ts_snd()};
+                             result.ts_snd(), result.ram_rss_kb()};
       
       ts_snd_rec[task.task_id()] = tss;
 
@@ -217,7 +217,7 @@ int main(int argc, char ** argv)
   const std::string bind_addr =
       (argc > 2) ? argv[2] : std::string("0.0.0.0:50000");
   const std::string out_file =
-      (argc > 3) ? argv[3] : std::string("areg_out");
+      (argc > 3) ? argv[3] : std::string("grpc_out");
 
 
   auto tasks = load_tasks(task_file);

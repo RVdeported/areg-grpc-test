@@ -66,6 +66,9 @@
                 <Parameter ID="100" Name="ts_snd" DataType="uint64">
                     <Description/>
                 </Parameter>
+                <Parameter ID="104" Name="ram_rss_kb" DataType="uint64">
+                    <Description/>
+                </Parameter>
             </ParamList>
         </Method>
         <Method ID="101" Name="RegisterWorkerReply" MethodType="Response">
