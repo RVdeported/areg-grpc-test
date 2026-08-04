@@ -5,8 +5,11 @@
 #include <filesystem>
 #include <fstream>
 #include <cstdio>
+#include <sstream>
+#include <string>
 #include <vector>
 #include <ranges>
+#include <iostream>
 namespace common
 {
 using I = uint32_t;
@@ -132,6 +135,28 @@ inline size_t ts()
 }
 
 // -----------------------------------------------------------------------
+// System resource metrics — read from /proc/self
+// -----------------------------------------------------------------------
+
+// Returns VmRSS in kB (resident set size — physical memory in use).
+inline size_t get_ram_rss_kb()
+{
+  std::ifstream status("/proc/self/status");
+  std::string line;
+  while (std::getline(status, line))
+  {
+    if (line.starts_with("VmRSS:"))
+    {
+      std::stringstream ss(line);
+      std::string key, value;
+      ss >> key >> value;
+      return std::stoull(value);
+    }
+  }
+  return 0;
+}
+
+// -----------------------------------------------------------------------
 // CSV recorder — writes completed-task timings to disk
 // -----------------------------------------------------------------------
 
@@ -145,6 +170,7 @@ struct TaskRecord
   I task_id;
   I n, m, k;
   size_t ts_srv_snd, ts_srv_rec, ts_cli_rec, ts_cli_tsk, ts_cli_snd;
+  size_t ram_rss_kb;  // VmRSS in kB at task completion
 
   void Validate() const
   {
@@ -168,14 +194,17 @@ inline void record_csv(const std::vector<TaskRecord> & records,
   if (!out)
     throw std::runtime_error("record_csv: cannot open file: " +
                              path.string() + "\n");
+
+  std::cout << "recording to " << path << '\n';
   out << "task_id,n,m,k,ts_srv_snd,ts_srv_rec,ts_cli_rec,ts_cli_tsk,ts_cli_"
-         "snd\n";
+         "snd,ram_rss_kb\n";
   for (const auto & r : records)
   {
     r.Validate();
     out << r.task_id << ',' << r.n << ',' << r.m << ',' << r.k << ','
         << r.ts_srv_snd << ',' << r.ts_srv_rec << ',' << r.ts_cli_rec << ','
-        << r.ts_cli_tsk << ',' << r.ts_cli_snd << '\n';
+        << r.ts_cli_tsk << ',' << r.ts_cli_snd << ','
+        << r.ram_rss_kb << '\n';
   }
 }
 } // namespace common

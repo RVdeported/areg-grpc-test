@@ -86,6 +86,7 @@ int main(int argc, char * argv[])
     tr.set_ts_rec(ts_rec);
     tr.set_ts_tsk(ts_tsk);
     tr.set_ts_snd(common::ts());
+    tr.set_ram_rss_kb(common::get_ram_rss_kb());
 
     if (!stream->Write(tr))
     {
