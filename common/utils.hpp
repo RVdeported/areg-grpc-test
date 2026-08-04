@@ -138,6 +138,7 @@ inline size_t ts()
 // Set by main() before any framework initialization to capture the
 // original CWD (the "place of execution") in case the framework changes it.
 inline std::filesystem::path g_output_dir;
+inline std::string           g_output_file;
 
 struct TaskRecord
 {

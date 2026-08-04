@@ -32,7 +32,7 @@ END_MODEL(_modelName)
 
 static void usage(std::string_view prog)
 {
-  std::fprintf(stderr, "usage: %s <task_file>\n", prog.data());
+  std::fprintf(stderr, "usage: %s <task_file> <out_file>\n", prog.data());
   std::exit(1);
 }
 
@@ -40,6 +40,7 @@ int main(int argc, char ** argv)
 {
   if (argc < 2)
     usage(argv[0]);
+  common::g_output_file = argc >= 2 ? argv[1] : "areg_out.csv";
 
   // Capture CWD before the framework potentially changes it.
   common::g_output_dir = std::filesystem::current_path();

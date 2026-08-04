@@ -71,7 +71,7 @@ void MasterComponent::make_response(uint32_t worker_id)
     if (!mShutdown)
     {
       mShutdown.store(true, std::memory_order_relaxed);
-      common::record_csv(mRes, "areg_out.csv");
+      common::record_csv(mRes, common::g_output_file);
     }
     areg::Application::signal_quit();
   }

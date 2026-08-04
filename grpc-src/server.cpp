@@ -201,7 +201,7 @@ static std::vector<ArrayMultiplyTask> load_tasks(const std::string & filename)
 
 static void usage(std::string_view prog)
 {
-  std::printf("usage: %s <task_file> [bind_address]\n", prog.data());
+  std::printf("usage: %s <task_file> [bind_address] [out_file]\n", prog.data());
   std::exit(1);
 }
 
@@ -212,10 +212,13 @@ int main(int argc, char ** argv)
 
   // Capture CWD before anything changes it.
   common::g_output_dir = std::filesystem::current_path();
-
+  
   const std::string task_file = argv[1];
   const std::string bind_addr =
       (argc > 2) ? argv[2] : std::string("0.0.0.0:50000");
+  const std::string out_file =
+      (argc > 3) ? argv[3] : std::string("areg_out");
+
 
   auto tasks = load_tasks(task_file);
   if (tasks.empty())
@@ -252,7 +255,7 @@ int main(int argc, char ** argv)
              dispatcher.completed());
 
   // --- Build task-timing records and write CSV --------------------------
-  common::record_csv(service.ts_snd_rec, "grpc_out.csv");
+  common::record_csv(service.ts_snd_rec, out_file);
 
   dispatcher.shutdown();
   server->Shutdown();
