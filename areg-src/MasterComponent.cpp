@@ -67,8 +67,12 @@ void MasterComponent::make_response(uint32_t worker_id)
     std::printf("[master] no more tasks — queue exhausted\n");
 
     response_AssignTaskReply(0, {}, {}, 0, 0, 0);
-
-    common::record_csv(mRes);
+    
+    if (!mShutdown)
+    {
+      mShutdown.store(true, std::memory_order_relaxed);
+      common::record_csv(mRes, "areg_out.csv");
+    }
     areg::Application::signal_quit();
   }
 }

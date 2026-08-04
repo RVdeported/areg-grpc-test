@@ -252,7 +252,7 @@ int main(int argc, char ** argv)
              dispatcher.completed());
 
   // --- Build task-timing records and write CSV --------------------------
-  common::record_csv(service.ts_snd_rec);
+  common::record_csv(service.ts_snd_rec, "grpc_out.csv");
 
   dispatcher.shutdown();
   server->Shutdown();

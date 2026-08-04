@@ -157,11 +157,12 @@ struct TaskRecord
   }
 };
 
-inline void record_csv(const std::vector<TaskRecord> & records)
+inline void record_csv(const std::vector<TaskRecord> & records, 
+    const std::string & file_name)
 {
   auto path = g_output_dir.empty()
-                  ? std::filesystem::path("out.csv")
-                  : g_output_dir / "out.csv";
+                  ? std::filesystem::path(file_name)
+                  : g_output_dir / file_name;
   std::ofstream out(path);
   if (!out)
     throw std::runtime_error("record_csv: cannot open file: " +
@@ -171,7 +172,6 @@ inline void record_csv(const std::vector<TaskRecord> & records)
   for (const auto & r : records)
   {
     r.Validate();
-    std::printf("%lu %lu %lu\n", r.ts_cli_rec, r.ts_cli_tsk, r.ts_cli_snd);
     out << r.task_id << ',' << r.n << ',' << r.m << ',' << r.k << ','
         << r.ts_srv_snd << ',' << r.ts_srv_rec << ',' << r.ts_cli_rec << ','
         << r.ts_cli_tsk << ',' << r.ts_cli_snd << '\n';

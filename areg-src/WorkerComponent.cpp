@@ -51,7 +51,6 @@ void WorkerComponent::response_AssignTaskReply(uint32_t task_id,
                                                uint32_t cols_b)
 {
   size_t ts_rec = common::ts();
-  std::printf("[worker %u] received task assignment\n", mWorkerId);
 
   auto res =
       common::multiply(arr_a.data(), arr_b.data(), rows_a, cols_a, cols_b);
@@ -59,4 +58,5 @@ void WorkerComponent::response_AssignTaskReply(uint32_t task_id,
 
   size_t ts_snd = common::ts();
   request_SubmitTask(mWorkerId, task_id, {res}, ts_rec, ts_tsk, ts_snd);
+  std::printf("[worker %u] task %u done\n", mWorkerId, task_id);
 }

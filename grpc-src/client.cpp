@@ -70,7 +70,6 @@ int main(int argc, char * argv[])
   while (stream->Read(&task))
   {
     size_t ts_rec = common::ts();
-    std::printf("[client %u] received %d\n", worker_id, task.task_id());
   
     // XXX: do not care about excessive coping, etc
     std::vector<double> a(task.array_a().begin(), task.array_a().end());
