@@ -75,6 +75,9 @@ if [[ "$TRANSPORT" == "areg" ]]; then
   cd "$SCRIPT_DIR"
   echo "Launching $NUM_CLIENTS AREG client(s) …"
   
+  AREG_HOST="${SERVER_ADDR%:*}"
+  AREG_PORT="${SERVER_ADDR##*:}"
+
   sed -e "s/^router::\*::address::tcpip\s*=.*/router::*::address::tcpip   = $AREG_HOST/" \
       -e "s/^router::\*::port::tcpip\s*=.*/router::*::port::tcpip      = $AREG_PORT/" \
       "$AREG_CONFIG" > "$AREG_FINAL_CONFIG"
