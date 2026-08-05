@@ -89,7 +89,7 @@ int main(int argc, char * argv[])
     tr.set_ram_used_kb(common::get_ram_used_kb());
     tr.set_cpu_usage_percent(common::get_cpu_usage_percent());
 
-    if (!stream->Write(tr))
+    if (!stream->Write(tr)) [[unlikely]]
     {
       std::fprintf(stderr, "[client %u] write failed, stream broken\n",
           worker_id);
