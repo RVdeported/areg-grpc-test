@@ -68,12 +68,7 @@ void MasterComponent::make_response(uint32_t worker_id)
 
     response_AssignTaskReply(0, {}, {}, 0, 0, 0);
     
-    if (!mShutdown)
-    {
-      mShutdown.store(true, std::memory_order_relaxed);
-      common::record_csv(mRes, common::g_output_file);
-    }
-    areg::Application::signal_quit();
+    mShutdown.store(true, std::memory_order_relaxed);
   }
 }
 
@@ -110,6 +105,14 @@ void MasterComponent::request_SubmitTask(uint32_t worker_id, uint32_t task_id,
                          ts_snd};
 
   mRes[task_id] = out;
-
-  make_response(worker_id);
+  
+  if (mCompleted >= mQueue.size()) [[unlikely]]
+  {
+    common::record_csv(mRes, common::g_output_file);
+    areg::Application::signal_quit();
+  }
+  else
+  {
+    make_response(worker_id);
+  }
 }

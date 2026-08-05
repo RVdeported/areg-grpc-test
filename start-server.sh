@@ -12,6 +12,7 @@ WORK_CONFIG="$CONFIG_TEMPLATE"
 # ── defaults ──────────────────────────────────────────────────
 TRANSPORT="areg"
 TASK_FILE="tasks.txt"
+OUT_FILE="out.csv"
 NUM_SAMPLES="100"
 DIM_LOWER="1"
 DIM_UPPER="10"
@@ -33,6 +34,7 @@ Options:
       --dim-upper N          Upper bound for matrix dimensions
   -f, --task-file FILE       Task file path
   -a, --address ADDR         Bind / listen address (host:port)
+  -o, --out-file FILE        name of a file to record the statistics
   -h, --help                 Show this help message
 
 Examples:
@@ -71,6 +73,7 @@ while [[ $# -gt 0 ]]; do
     --dim-upper)      DIM_UPPER="$2";   shift 2 ;;
     -f|--task-file)   TASK_FILE="$2";   shift 2 ;;
     -a|--address)     BIND_ADDRESS="$2"; shift 2 ;;
+    -o|--out-file)    OUT_FILE="$2";    shift 2 ;;
     -h|--help)        usage ;;
     *) die "Unknown option: $1" ;;
   esac
@@ -108,7 +111,7 @@ if [[ "$TRANSPORT" == "areg" ]]; then
 
   # Start the message router in the background.
   echo "Starting mtrouter …"
-  "$MTROUTER" --load="$WORK_CONFIG" -t &
+  "$MTROUTER" --load="$WORK_CONFIG" -t --service &
   MTROUTER_PID=$!
 
   # Give the router a moment to bind.
@@ -124,12 +127,12 @@ if [[ "$TRANSPORT" == "areg" ]]; then
   # so we cd to the project root where we just wrote the config.
   echo "Starting AREG server with $TASK_FILE …"
   cd "$SCRIPT_DIR"
-  exec "$AREG_SERVER" "$TASK_FILE"
+  exec "$AREG_SERVER" "$TASK_FILE" "$OUT_FILE"
 
 else
   # ── gRPC: start server directly ──────────────────────────────
 
   echo "Starting gRPC server on $BIND_ADDRESS with $TASK_FILE …"
-  exec "$GRPC_SERVER" "$TASK_FILE" "$BIND_ADDRESS"
+  exec "$GRPC_SERVER" "$TASK_FILE" "$BIND_ADDRESS" "$OUT_FILE"
 
 fi
