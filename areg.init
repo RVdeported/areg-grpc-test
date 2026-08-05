@@ -1,6 +1,0 @@
-# Router service configuration
-router::*::service          = mtrouter      # Service name
-router::*::connect          = tcpip         # Protocol (tcpip only)
-router::*::enable::tcpip    = true          # Enable TCP/IP
-router::*::address::tcpip   = 0.0.0.0     # Listen address
-router::*::port::tcpip      = 50000          # Listen port
