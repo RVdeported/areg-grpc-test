@@ -217,7 +217,7 @@ int main(int argc, char ** argv)
   const std::string bind_addr =
       (argc > 2) ? argv[2] : std::string("0.0.0.0:50000");
   const std::string out_file =
-      (argc > 3) ? argv[3] : std::string("grpc_out");
+      (argc > 3) ? argv[3] : std::string("grpc_out.csv");
 
 
   auto tasks = load_tasks(task_file);
