@@ -145,7 +145,7 @@ public:
       // record timings
       common::TaskRecord tss{task.task_id(), task.rows_a(),   task.cols_a(),
                              task.cols_b(), ts_snd, ts_rec,  result.ts_rec(), result.ts_tsk(),
-                             result.ts_snd(), result.ram_rss_kb()};
+                             result.ts_snd(), result.ram_used_kb(), result.cpu_usage_percent()};
       
       ts_snd_rec[task.task_id()] = tss;
 

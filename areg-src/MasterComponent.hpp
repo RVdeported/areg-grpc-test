@@ -30,7 +30,8 @@ public:
                           const Interface::DArray & result,
                           uint64_t ts_rec, uint64_t ts_tsk,
                           uint64_t ts_snd,
-                          uint64_t ram_rss_kb) final;
+                          uint64_t ram_used_kb,
+                          double   cpu_usage_percent) final;
 
   void request_AssignTask(uint32_t worker_id) final;
 

@@ -135,25 +135,63 @@ inline size_t ts()
 }
 
 // -----------------------------------------------------------------------
-// System resource metrics — read from /proc/self
+// System resource metrics — read from /proc
 // -----------------------------------------------------------------------
-
-// Returns VmRSS in kB (resident set size — physical memory in use).
-inline size_t get_ram_rss_kb()
+inline size_t get_ram_used_kb()
 {
-  std::ifstream status("/proc/self/status");
-  std::string line;
-  while (std::getline(status, line))
+  std::ifstream meminfo("/proc/meminfo");
+  std::string   line;
+  size_t        mem_total     = 0;
+  size_t        mem_available = 0;
+
+  while (std::getline(meminfo, line))
   {
-    if (line.starts_with("VmRSS:"))
+    if (line.starts_with("MemTotal:"))
     {
       std::stringstream ss(line);
       std::string key, value;
       ss >> key >> value;
-      return std::stoull(value);
+      mem_total = std::stoull(value);
     }
+    else if (line.starts_with("MemAvailable:"))
+    {
+      std::stringstream ss(line);
+      std::string key, value;
+      ss >> key >> value;
+      mem_available = std::stoull(value);
+    }
+    if (mem_total != 0 && mem_available != 0)
+      break;
   }
-  return 0;
+  return std::max(mem_total - mem_available, 0LU);
+}
+
+// Returns overall CPU usage percentage (0–100) by reading /proc/stat.
+// Computed as: (busy_time / total_time) * 100, where busy_time excludes
+// idle and iowait.
+inline double get_cpu_usage_percent()
+{
+  std::ifstream stat("/proc/stat");
+  std::string   line;
+  if (!std::getline(stat, line))
+    return 0.0;
+
+  std::stringstream ss(line);
+  std::string       cpu_label;
+  ss >> cpu_label;  // "cpu"
+
+  uint64_t user = 0, nice = 0, system = 0, idle = 0, iowait = 0;
+  uint64_t irq = 0, softirq = 0, steal = 0;
+  ss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
+
+  uint64_t total = user + nice + system + idle + iowait + irq + softirq
+                   + steal;
+  uint64_t busy  = total - idle - iowait;
+
+  if (total == 0)
+    return 0.0;
+
+  return static_cast<double>(busy) * 100.0 / static_cast<double>(total);
 }
 
 // -----------------------------------------------------------------------
@@ -170,13 +208,14 @@ struct TaskRecord
   I task_id;
   I n, m, k;
   size_t ts_srv_snd, ts_srv_rec, ts_cli_rec, ts_cli_tsk, ts_cli_snd;
-  size_t ram_rss_kb;  // VmRSS in kB at task completion
+  size_t ram_used_kb;       // overall system RAM used in kB
+  double cpu_usage_percent;  // overall CPU usage 0–100
 
   void Validate() const
   {
 #ifndef NDEBUG
     const auto v = {ts_srv_snd, ts_cli_rec, ts_cli_tsk, ts_cli_snd, ts_srv_rec};
-    for (int i = 1; i < v.size(); i++)
+    for (size_t i = 1; i < v.size(); i++)
     {
       assert(v.begin() + i - 1 <= v.begin() + i);
     }
@@ -197,14 +236,14 @@ inline void record_csv(const std::vector<TaskRecord> & records,
 
   std::cout << "recording to " << path << '\n';
   out << "task_id,n,m,k,ts_srv_snd,ts_srv_rec,ts_cli_rec,ts_cli_tsk,ts_cli_"
-         "snd,ram_rss_kb\n";
+         "snd,ram_used_kb,cpu_usage_percent\n";
   for (const auto & r : records)
   {
     r.Validate();
     out << r.task_id << ',' << r.n << ',' << r.m << ',' << r.k << ','
         << r.ts_srv_snd << ',' << r.ts_srv_rec << ',' << r.ts_cli_rec << ','
         << r.ts_cli_tsk << ',' << r.ts_cli_snd << ','
-        << r.ram_rss_kb << '\n';
+        << r.ram_used_kb << ',' << r.cpu_usage_percent << '\n';
   }
 }
 } // namespace common

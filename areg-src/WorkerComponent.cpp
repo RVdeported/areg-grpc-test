@@ -56,9 +56,10 @@ void WorkerComponent::response_AssignTaskReply(uint32_t task_id,
       common::multiply(arr_a.data(), arr_b.data(), rows_a, cols_a, cols_b);
   size_t ts_tsk = common::ts();
 
-  size_t ram_rss_kb  = common::get_ram_rss_kb();
+  size_t ram_used_kb      = common::get_ram_used_kb();
+  double cpu_usage_percent = common::get_cpu_usage_percent();
   size_t ts_snd = common::ts();
   request_SubmitTask(mWorkerId, task_id, {res}, ts_rec, ts_tsk, ts_snd,
-                      ram_rss_kb);
+                      ram_used_kb, cpu_usage_percent);
   std::printf("[worker %u] task %u done\n", mWorkerId, task_id);
 }

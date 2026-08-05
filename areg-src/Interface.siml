@@ -66,7 +66,10 @@
                 <Parameter ID="100" Name="ts_snd" DataType="uint64">
                     <Description/>
                 </Parameter>
-                <Parameter ID="104" Name="ram_rss_kb" DataType="uint64">
+                <Parameter ID="104" Name="ram_used_kb" DataType="uint64">
+                    <Description/>
+                </Parameter>
+                <Parameter ID="105" Name="cpu_usage_percent" DataType="double">
                     <Description/>
                 </Parameter>
             </ParamList>

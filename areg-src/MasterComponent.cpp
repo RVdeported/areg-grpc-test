@@ -89,7 +89,8 @@ void MasterComponent::request_SubmitTask(uint32_t worker_id, uint32_t task_id,
                                          const Interface::DArray & result,
                                          uint64_t ts_rec, uint64_t ts_tsk,
                                          uint64_t ts_snd,
-                                         uint64_t ram_rss_kb)
+                                         uint64_t ram_used_kb,
+                                         double   cpu_usage_percent)
 {
   size_t ts_src_rec = common::ts();
   (void) mCompleted.fetch_add(1, std::memory_order_relaxed);
@@ -104,7 +105,8 @@ void MasterComponent::request_SubmitTask(uint32_t worker_id, uint32_t task_id,
                          ts_rec,
                          ts_tsk,
                          ts_snd,
-                         ram_rss_kb};
+                         ram_used_kb,
+                         cpu_usage_percent};
 
   mRes[task_id] = out;
   

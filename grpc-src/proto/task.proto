@@ -30,7 +30,8 @@ message TaskResult {
   uint64   ts_rec = 4;
   uint64   ts_tsk = 5;
   uint64   ts_snd = 6;
-  uint64   ram_rss_kb  = 7;
+  uint64   ram_used_kb  = 7;
+  double   cpu_usage_percent = 8;
 }
 
 // ---------------------------------------------------------------------------

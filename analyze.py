@@ -34,7 +34,8 @@ _METRICS: dict[str, str] = {
     "cli_compute": "ts_cli_snd - ts_cli_tsk",
     "net_srv2cli": "ts_cli_rec - ts_srv_snd",
     "net_cli2srv": "ts_srv_rec - ts_cli_snd",
-    "ram":        "ram_rss_kb",
+    "ram":        "ram_used_kb",
+    "cpu":        "cpu_usage_percent",
 }
 
 _LABELS: dict[str, str] = {
@@ -44,7 +45,8 @@ _LABELS: dict[str, str] = {
     "cli_compute":  "Client compute time (µs)",
     "net_srv2cli":  "Network srv→cli (µs)",
     "net_cli2srv":  "Network cli→srv (µs)",
-    "ram":          "Client RAM RSS (kB)",
+    "ram":          "System RAM used (kB)",
+    "cpu":          "System CPU usage (%)",
 }
 
 COLORS: dict[str, str] = {"areg": "#2ca02c", "grpc": "#1f77b4"}
