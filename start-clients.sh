@@ -4,6 +4,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AREG_CLIENT="$SCRIPT_DIR/build/bin/areg_client.elf"
 GRPC_CLIENT="$SCRIPT_DIR/build/grpc-src/grpc-client"
+AREG_CONFIG="$SCRIPT_DIR/areg.init"
+AREG_FINAL_CONFIG="$SCRIPT_DIR/build/bin/config/areg.init"
+
+# Seed from the AREG SDK default template on first run.
+if [[ ! -f "$AREG_CONFIG" ]]; then
+  cp "$AREG_FINAL_CONFIG" "$AREG_CONFIG"
+fi
 
 # ── defaults ──────────────────────────────────────────────────
 TRANSPORT="areg"
@@ -67,6 +74,13 @@ if [[ "$TRANSPORT" == "areg" ]]; then
   # AREG clients read areg.init from CWD, so cd to project root.
   cd "$SCRIPT_DIR"
   echo "Launching $NUM_CLIENTS AREG client(s) …"
+  
+  sed -e "s/^router::\*::address::tcpip\s*=.*/router::*::address::tcpip   = $AREG_HOST/" \
+      -e "s/^router::\*::port::tcpip\s*=.*/router::*::port::tcpip      = $AREG_PORT/" \
+      "$AREG_CONFIG" > "$AREG_FINAL_CONFIG"
+
+  echo "Router config written to $AREG_CONFIG  ($AREG_HOST:$AREG_PORT)"
+
 
   for ((i = 0; i < NUM_CLIENTS; i++)); do
     "$AREG_CLIENT" &
