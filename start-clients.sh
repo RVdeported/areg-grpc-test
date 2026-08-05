@@ -82,7 +82,7 @@ if [[ "$TRANSPORT" == "areg" ]]; then
       -e "s/^router::\*::port::tcpip\s*=.*/router::*::port::tcpip      = $AREG_PORT/" \
       "$AREG_CONFIG" > "$AREG_FINAL_CONFIG"
 
-  echo "Router config written to $AREG_CONFIG  ($AREG_HOST:$AREG_PORT)"
+  echo "Router config written to $AREG_FINAL_CONFIG  ($AREG_HOST:$AREG_PORT)"
 
 
   for ((i = 0; i < NUM_CLIENTS; i++)); do
