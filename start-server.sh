@@ -6,8 +6,13 @@ GEN_TASKS="$SCRIPT_DIR/build/common/gen-tasks"
 AREG_SERVER="$SCRIPT_DIR/build/bin/areg_server.elf"
 MTROUTER="$SCRIPT_DIR/build/bin/mtrouter.elf"
 GRPC_SERVER="$SCRIPT_DIR/build/grpc-src/grpc-server"
-CONFIG_TEMPLATE="$SCRIPT_DIR/build/bin/config/areg.init"
-WORK_CONFIG="$CONFIG_TEMPLATE"
+AREG_CONFIG="$SCRIPT_DIR/areg.init"
+AREG_FINAL_CONFIG="$SCRIPT_DIR/build/bin/config/areg.init"
+
+# Seed from the AREG SDK default template on first run.
+if [[ ! -f "$AREG_CONFIG" ]]; then
+  cp "$AREG_FINAL_CONFIG" "$AREG_CONFIG"
+fi
 
 # ── defaults ──────────────────────────────────────────────────
 TRANSPORT="areg"
@@ -105,13 +110,13 @@ if [[ "$TRANSPORT" == "areg" ]]; then
   # Write working config from the full template, patching router address.
   sed -e "s/^router::\*::address::tcpip\s*=.*/router::*::address::tcpip   = $AREG_HOST/" \
       -e "s/^router::\*::port::tcpip\s*=.*/router::*::port::tcpip      = $AREG_PORT/" \
-      "$CONFIG_TEMPLATE" > "$WORK_CONFIG"
+      "$AREG_CONFIG" > "$AREG_FINAL_CONFIG"
 
-  echo "Router config written to $WORK_CONFIG  ($AREG_HOST:$AREG_PORT)"
+  echo "Router config written to $AREG_CONFIG  ($AREG_HOST:$AREG_PORT)"
 
   # Start the message router in the background.
   echo "Starting mtrouter …"
-  "$MTROUTER" --load="$WORK_CONFIG" -t --service &
+  "$MTROUTER" --load="$AREG_FINAL_CONFIG" -t --service &
   MTROUTER_PID=$!
 
   # Give the router a moment to bind.
