@@ -71,18 +71,18 @@ int main(int argc, char * argv[])
   {
     size_t ts_rec = common::ts();
   
-    // XXX: do not care about excessive coping, etc
-    std::vector<double> a(task.array_a().begin(), task.array_a().end());
-    std::vector<double> b(task.array_b().begin(), task.array_b().end());
-    auto result =
-        common::multiply(a, b, task.rows_a(), task.cols_a(), task.cols_b());
-    size_t ts_tsk = common::ts();
-
     taskdist::TaskResult tr;
+    {
+      auto result =
+          common::multiply(task.array_a(), task.array_b(), task.rows_a(), task.cols_a(), task.cols_b());
+      for (double v : result)
+        tr.add_result(v);
+    }
+    size_t ts_tsk = common::ts();
+    
     tr.set_task_id(task.task_id());
     tr.set_worker_id(worker_id);
-    for (double v : result)
-      tr.add_result(v);
+    
     tr.set_ts_rec(ts_rec);
     tr.set_ts_tsk(ts_tsk);
     tr.set_ts_snd(common::ts());

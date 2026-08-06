@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <cstdio>
+#include <google/protobuf/repeated_field.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -106,13 +107,21 @@ inline std::vector<Task> read_tasks(const std::string & filename)
 // Matrix multiply: A(r×c) × B(c×cb) → result (r×cb), all row-major.
 // -----------------------------------------------------------------------
 // XXX: Note that we deliberately not using any optimizations
-inline std::vector<double> multiply(const std::vector<F> & a,
-                                    const std::vector<F> & b, I rows_a,
+template <typename T>
+concept Container = requires(T a) {
+    typename T::value_type;
+    { a.begin() } -> std::input_or_output_iterator;
+    { a.end() }   -> std::input_or_output_iterator;
+};
+
+template<Container C>
+inline std::vector<F> multiply(C & a,
+                                    C & b, I rows_a,
                                     I cols_a, I cols_b)
 {
   assert(a.size() == cols_a * rows_a);
   assert(b.size() == cols_a * cols_b);
-  std::vector<double> result(rows_a * cols_b, 0.0);
+  std::vector<F> result(rows_a * cols_b, 0.0);
   for (I i = 0; i < rows_a; ++i)
   {
     for (I k = 0; k < cols_a; ++k)
