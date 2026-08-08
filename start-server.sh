@@ -132,7 +132,10 @@ if [[ "$TRANSPORT" == "areg" ]]; then
   # so we cd to the project root where we just wrote the config.
   echo "Starting AREG server with $TASK_FILE …"
   cd "$SCRIPT_DIR"
-  exec "$AREG_SERVER" "$TASK_FILE" "$OUT_FILE"
+  "$AREG_SERVER" "$TASK_FILE" "$OUT_FILE"
+  
+  echo "Killing mtrouter pid $MTROUTER_PID …"
+  kill $MTROUTER_PID 
 
 else
   # ── gRPC: start server directly ──────────────────────────────

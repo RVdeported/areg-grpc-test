@@ -2,8 +2,9 @@
 
 #include "areg-src/InterfaceConsumerBase.hpp"
 #include "areg/component/Component.hpp"
-
+#include <vector>
 #include "areg-src/Interface.hpp"
+#include "common/utils.hpp"
 
 class WorkerComponent final : public areg::Component,
                               protected InterfaceConsumerBase
@@ -29,6 +30,7 @@ private:
   uint32_t mWorkerId{0};
   bool mRegistered{false};
   inline WorkerComponent & self() { return (*this); }
+  std::vector<common::F> mBuff;
 
   WorkerComponent() = delete;
   AREG_NOCOPY_NOMOVE(WorkerComponent);

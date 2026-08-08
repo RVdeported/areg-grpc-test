@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <fstream>
 #include <cstdio>
-#include <google/protobuf/repeated_field.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -115,13 +114,14 @@ concept Container = requires(T a) {
 };
 
 template<Container C>
-inline std::vector<F> multiply(C & a,
+inline void multiply(C & a,
                                     C & b, I rows_a,
-                                    I cols_a, I cols_b)
+                                    I cols_a, I cols_b,
+                                    std::vector<F> & out)
 {
   assert(a.size() == cols_a * rows_a);
   assert(b.size() == cols_a * cols_b);
-  std::vector<F> result(rows_a * cols_b, 0.0);
+  out.resize(rows_a * cols_b, 0.0);
   for (I i = 0; i < rows_a; ++i)
   {
     for (I k = 0; k < cols_a; ++k)
@@ -129,11 +129,11 @@ inline std::vector<F> multiply(C & a,
       F aik = a[i * cols_a + k];
       for (I j = 0; j < cols_b; ++j)
       {
-        result[i * cols_b + j] += aik * b[k * cols_b + j];
+        out[i * cols_b + j] += aik * b[k * cols_b + j];
       }
     }
   }
-  return result;
+  return;
 }
 
 inline size_t ts()

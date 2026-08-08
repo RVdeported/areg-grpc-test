@@ -64,6 +64,8 @@ int main(int argc, char * argv[])
   }
 
   std::printf("[client %u] accepting tasks\n", worker_id);
+  
+  std::vector<double> buff; buff.reserve(10000);
 
   // -- process tasks -------------------------------------------------------
   taskdist::ArrayMultiplyTask task;
@@ -71,11 +73,12 @@ int main(int argc, char * argv[])
   {
     size_t ts_rec = common::ts();
   
+    buff.clear();
     taskdist::TaskResult tr;
     {
-      auto result =
-          common::multiply(task.array_a(), task.array_b(), task.rows_a(), task.cols_a(), task.cols_b());
-      for (double v : result)
+      assert(buff.empty());
+      common::multiply(task.array_a(), task.array_b(), task.rows_a(), task.cols_a(), task.cols_b(), buff);
+      for (double v : buff)
         tr.add_result(v);
     }
     size_t ts_tsk = common::ts();
@@ -101,5 +104,6 @@ int main(int argc, char * argv[])
 
   Status st = stream->Finish();
   std::printf("[client %u] stream closed: %s\n", worker_id, st.error_message().c_str());
+  buff.clear();
   return 0;
 }

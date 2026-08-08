@@ -11,6 +11,7 @@ WorkerComponent::WorkerComponent(const areg::ComponentEntry & entry,
       InterfaceConsumerBase(entry.mDependencyServices[0].mRoleName.as_string(),
                             static_cast<areg::Component &>(self()))
 {
+  mBuff.reserve(10000);
 }
 
 // ---------------------------------------------------------------------------
@@ -51,15 +52,15 @@ void WorkerComponent::response_AssignTaskReply(uint32_t task_id,
                                                uint32_t cols_b)
 {
   size_t ts_rec = common::ts();
-
-  auto res =
-      common::multiply(arr_a.data(), arr_b.data(), rows_a, cols_a, cols_b);
+  
+  common::multiply(arr_a.data(), arr_b.data(), rows_a, cols_a, cols_b, mBuff);
   size_t ts_tsk = common::ts();
 
   size_t ram_used_kb      = common::get_ram_used_kb();
   double cpu_usage_percent = common::get_cpu_usage_percent();
   size_t ts_snd = common::ts();
-  request_SubmitTask(mWorkerId, task_id, std::move(res), ts_rec, ts_tsk, ts_snd,
+  request_SubmitTask(mWorkerId, task_id, mBuff, ts_rec, ts_tsk, ts_snd,
                       ram_used_kb, cpu_usage_percent);
   std::printf("[worker %u] task %u done\n", mWorkerId, task_id);
+  mBuff.clear();
 }
