@@ -8,7 +8,6 @@ volume into the configured output directory.
 
 Usage::
 
-    python3 docker_bench.py                     # uses ./benchmark.ini
     python3 docker_bench.py --config my.ini     # custom config
     python3 docker_bench.py --dry-run           # print what would happen
     python3 docker_bench.py --no-build          # skip docker compose build
