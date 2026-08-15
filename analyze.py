@@ -29,24 +29,24 @@ from matplotlib.figure import Figure
 # ── constants ────────────────────────────────────────────────────────────────
 _METRICS: dict[str, str] = {
     "ttl":        "ts_srv_rec - ts_srv_snd",
-    "cli_total":  "ts_cli_snd - ts_cli_rec",
-    "cli_queue":  "ts_cli_tsk - ts_cli_rec",
+    # "cli_total":  "ts_cli_snd - ts_cli_rec",
+    "cli_ser":  "ts_cli_tsk - ts_cli_rec",
     "cli_compute": "ts_cli_snd - ts_cli_tsk",
     "net_srv2cli": "ts_cli_rec - ts_srv_snd",
     "net_cli2srv": "ts_srv_rec - ts_cli_snd",
     "ram":        "ram_used_kb",
-    "cpu":        "cpu_usage_percent",
+    # "cpu":        "cpu_usage_percent",
 }
 
 _LABELS: dict[str, str] = {
     "ttl":          "Total round-trip (µs)",
-    "cli_total":    "Client wall-clock (µs)",
-    "cli_queue":    "Client queue delay (µs)",
+    # "cli_total":    "Client wall-clock (µs)",
+    "cli_ser":      "Client serialization delay (µs)",
     "cli_compute":  "Client compute time (µs)",
     "net_srv2cli":  "Network srv→cli (µs)",
     "net_cli2srv":  "Network cli→srv (µs)",
     "ram":          "System RAM used (kB)",
-    "cpu":          "System CPU usage (%)",
+    # "cpu":          "System CPU usage (%)",
 }
 
 COLORS: dict[str, str] = {"areg": "#2ca02c", "grpc": "#1f77b4"}
@@ -80,6 +80,7 @@ def load_folder(folder: Path) -> pd.DataFrame:
         df["n_workers"] = nw
         # Filter sentinel rows used by AREG as keep-alive pings
         df = df[~((df["n"] == 0) & (df["m"] == 0) & (df["k"] == 0))]
+        # df["cpu_usage_percent"] *= 100
         frames.append(pd.DataFrame(df))
         print(f"  [load] {p.name:<24s}  {len(df):>5d} rows  transport={transport}, N={nw}",
               file=sys.stderr)
@@ -99,7 +100,7 @@ def compute_metrics(df: pd.DataFrame) -> pd.DataFrame:
 
 def _make_figure() -> "tuple[Figure, np.ndarray]":
     """Create a 4×2 grid of Axes + a single shared legend."""
-    fig, axes = plt.subplots(4, 2, figsize=(14, 20), constrained_layout=True)
+    fig, axes = plt.subplots(3, 3, figsize=(14, 20), constrained_layout=True)
     fig.suptitle("AREG vs gRPC — Matrix Multiply Benchmark",
                  fontsize=14, fontweight="bold", y=1.01)
     return fig, axes
@@ -132,7 +133,7 @@ def _bar_plot(ax, agg: pd.DataFrame, metric: str):
     ax.set_xticks(x)
     ax.set_xticklabels(workers)
     ax.legend(loc="upper left", fontsize=8)
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.2f}"))
     ax.grid(axis="y", alpha=0.3)
 
 
@@ -152,7 +153,7 @@ def _line_plot(ax, df: pd.DataFrame, metric: str):
     ax.set_ylabel(_LABELS[metric])
     ax.set_title(_LABELS[metric])
     ax.legend(fontsize=8)
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:,.2f}"))
     ax.grid(True, alpha=0.3)
 
 
@@ -212,8 +213,11 @@ def main() -> None:
     fig, axes = _make_figure()
     plotter = _line_plot if args.style == "line" else _bar_plot
 
+    log_metrics = {"cli_ser", "cli_compute", "cli_total", "net_srv2cli", "net_cli2srv"}
     for (metric, label), ax in zip(_LABELS.items(), axes.flat):
         plotter(ax, metrics_agg[metric], metric)
+        if metric in log_metrics:
+            ax.set_yscale("log")
 
     # Remove empty subplot if odd number of metrics
     if len(_LABELS) < axes.size:

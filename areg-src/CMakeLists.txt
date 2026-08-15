@@ -58,3 +58,9 @@ macro_declare_executable(areg_client
   WorkerComponent.cpp
   client.cpp
 )
+
+macro_declare_executable(areg_client_many 
+  areg_generated
+  WorkerComponent.cpp
+  client_many.cpp
+)

@@ -2,14 +2,14 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
-#include <cstdio>
+#include <iostream>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <ranges>
-#include <iostream>
 namespace common
 {
 using I = uint32_t;
@@ -105,19 +105,17 @@ inline std::vector<Task> read_tasks(const std::string & filename)
 // -----------------------------------------------------------------------
 // Matrix multiply: A(r×c) × B(c×cb) → result (r×cb), all row-major.
 // -----------------------------------------------------------------------
-// XXX: Note that we deliberately not using any optimizations
 template <typename T>
 concept Container = requires(T a) {
-    typename T::value_type;
-    { a.begin() } -> std::input_or_output_iterator;
-    { a.end() }   -> std::input_or_output_iterator;
+  typename T::value_type;
+  { a.begin() } -> std::input_or_output_iterator;
+  { a.end() } -> std::input_or_output_iterator;
 };
 
-template<Container C>
-inline void multiply(C & a,
-                                    C & b, I rows_a,
-                                    I cols_a, I cols_b,
-                                    std::vector<F> & out)
+// XXX: Note that we deliberately not using any optimizations
+template <Container C>
+inline void multiply(C const & a, C const & b, I rows_a, I cols_a, I cols_b,
+                     std::vector<F> & out)
 {
   assert(a.size() == cols_a * rows_a);
   assert(b.size() == cols_a * cols_b);
@@ -149,9 +147,9 @@ inline size_t ts()
 inline size_t get_ram_used_kb()
 {
   std::ifstream meminfo("/proc/meminfo");
-  std::string   line;
-  size_t        mem_total     = 0;
-  size_t        mem_available = 0;
+  std::string line;
+  size_t mem_total = 0;
+  size_t mem_available = 0;
 
   while (std::getline(meminfo, line))
   {
@@ -181,21 +179,20 @@ inline size_t get_ram_used_kb()
 inline double get_cpu_usage_percent()
 {
   std::ifstream stat("/proc/stat");
-  std::string   line;
+  std::string line;
   if (!std::getline(stat, line))
     return 0.0;
 
   std::stringstream ss(line);
-  std::string       cpu_label;
-  ss >> cpu_label;  // "cpu"
+  std::string cpu_label;
+  ss >> cpu_label; // "cpu"
 
   uint64_t user = 0, nice = 0, system = 0, idle = 0, iowait = 0;
   uint64_t irq = 0, softirq = 0, steal = 0;
   ss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
 
-  uint64_t total = user + nice + system + idle + iowait + irq + softirq
-                   + steal;
-  uint64_t busy  = total - idle - iowait;
+  uint64_t total = user + nice + system + idle + iowait + irq + softirq + steal;
+  uint64_t busy = total - idle - iowait;
 
   if (total == 0)
     return 0.0;
@@ -210,7 +207,7 @@ inline double get_cpu_usage_percent()
 // Set by main() before any framework initialization to capture the
 // original CWD (the "place of execution") in case the framework changes it.
 inline std::filesystem::path g_output_dir;
-inline std::string           g_output_file;
+inline std::string g_output_file;
 
 struct TaskRecord
 {
@@ -218,7 +215,7 @@ struct TaskRecord
   I n, m, k;
   size_t ts_srv_snd, ts_srv_rec, ts_cli_rec, ts_cli_tsk, ts_cli_snd;
   size_t ram_used_kb;       // overall system RAM used in kB
-  double cpu_usage_percent;  // overall CPU usage 0–100
+  double cpu_usage_percent; // overall CPU usage 0–100
 
   void Validate() const
   {
@@ -232,16 +229,15 @@ struct TaskRecord
   }
 };
 
-inline void record_csv(const std::vector<TaskRecord> & records, 
-    const std::string & file_name)
+inline void record_csv(const std::vector<TaskRecord> & records,
+                       const std::string & file_name)
 {
-  auto path = g_output_dir.empty()
-                  ? std::filesystem::path(file_name)
-                  : g_output_dir / file_name;
+  auto path = g_output_dir.empty() ? std::filesystem::path(file_name)
+                                   : g_output_dir / file_name;
   std::ofstream out(path);
   if (!out)
-    throw std::runtime_error("record_csv: cannot open file: " +
-                             path.string() + "\n");
+    throw std::runtime_error("record_csv: cannot open file: " + path.string() +
+                             "\n");
 
   std::cout << "recording to " << path << '\n';
   out << "task_id,n,m,k,ts_srv_snd,ts_srv_rec,ts_cli_rec,ts_cli_tsk,ts_cli_"
@@ -251,8 +247,8 @@ inline void record_csv(const std::vector<TaskRecord> & records,
     r.Validate();
     out << r.task_id << ',' << r.n << ',' << r.m << ',' << r.k << ','
         << r.ts_srv_snd << ',' << r.ts_srv_rec << ',' << r.ts_cli_rec << ','
-        << r.ts_cli_tsk << ',' << r.ts_cli_snd << ','
-        << r.ram_used_kb << ',' << r.cpu_usage_percent << '\n';
+        << r.ts_cli_tsk << ',' << r.ts_cli_snd << ',' << r.ram_used_kb << ','
+        << r.cpu_usage_percent << '\n';
   }
 }
 } // namespace common

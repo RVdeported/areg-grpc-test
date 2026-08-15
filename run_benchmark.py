@@ -48,6 +48,18 @@ def _get_local_ip() -> str:
             return "127.0.0.1"
 
 
+def _get_public_ip() -> str:
+    """Public IP via ``curl -s ip.me``.  Falls back to the LAN IP on failure."""
+    try:
+        r = subprocess.run(["curl", "-s", "--max-time", "5", "ip.me"],
+                           capture_output=True, text=True, timeout=6)
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return _get_local_ip()
+
+
 def _ssh_base(host: str, user: str, port: int) -> list[str]:
     """Prefix for an ``ssh`` invocation (no command)."""
     cmd = ["ssh", "-p", str(port)]
@@ -68,6 +80,25 @@ def _ssh_bg(host: str, user: str, port: int, remote_cmd: str) -> subprocess.Pope
     ssh.append(wrapper)
     return subprocess.Popen(ssh, stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL)
+
+
+def _wait_for_port(host: str, port: int, timeout: float = 60,
+                   proc: subprocess.Popen | None = None) -> bool:
+    """Poll until *host:port* accepts connections, or *proc* dies.
+
+    Returns ``True`` once a TCP connection succeeds, ``False`` if the
+    deadline expires or the server process exits before the port opens.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if proc is not None and proc.poll() is not None:
+            return False  # server died before port opened
+        try:
+            with socket.create_connection((host, port), timeout=0.5):
+                return True
+        except (ConnectionRefusedError, OSError):
+            time.sleep(0.5)
+    return False
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -129,7 +160,7 @@ def run_benchmark(config_path: Path, dry_run: bool = False) -> None:
         if t not in ("areg", "grpc"):
             raise SystemExit(f"Unknown transport: {t!r}")
 
-    local_ip = _get_local_ip()
+    local_ip = _get_public_ip() if use_remote else _get_local_ip()
 
     print("=" * 60)
     print("  AREG vs gRPC Benchmark Runner")
@@ -207,12 +238,22 @@ def run_benchmark(config_path: Path, dry_run: bool = False) -> None:
             )
 
             # ---- wait for server to be ready --------------------------------
-            print(f"  Waiting {startup_wait}s for server …")
-            time.sleep(startup_wait)
-            if server_proc.poll() is not None:
+            server_host_part = server_addr.split(":")[0]
+            server_port_part = int(server_addr.split(":")[1])
+            # 0.0.0.0 can't be connected to directly — use loopback instead
+            health_host = ("127.0.0.1" if server_host_part == "0.0.0.0"
+                           else server_host_part)
+            timeout = max(startup_wait, 120)  # floor of 30 s for large files
+            print(f"  Waiting for server on {health_host}:{server_port_part} "
+                  f"(timeout {timeout}s) …")
+            if not _wait_for_port(health_host, server_port_part,
+                                  timeout=timeout, proc=server_proc):
                 out = server_proc.stdout.read() if server_proc.stdout else b""
+                rc = server_proc.returncode
                 raise RuntimeError(
-                    f"Server exited early (code={server_proc.returncode}):\n"
+                    f"Server failed to start on "
+                    f"{health_host}:{server_port_part} "
+                    f"(exit code: {rc}):\n"
                     f"{out.decode(errors='replace')}"
                 )
 
@@ -247,7 +288,7 @@ def run_benchmark(config_path: Path, dry_run: bool = False) -> None:
                 # ---- wait for server to finish -----------------------------
                 print(f"  Waiting for server (pid {server_proc.pid}) …")
                 try:
-                    server_proc.wait(timeout=600)
+                    server_proc.wait(timeout=3000)
                 except subprocess.TimeoutExpired:
                     print("  TIMEOUT — killing server")
                     server_proc.kill()

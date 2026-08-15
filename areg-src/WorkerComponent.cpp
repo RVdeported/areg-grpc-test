@@ -61,6 +61,6 @@ void WorkerComponent::response_AssignTaskReply(uint32_t task_id,
   size_t ts_snd = common::ts();
   request_SubmitTask(mWorkerId, task_id, mBuff, ts_rec, ts_tsk, ts_snd,
                       ram_used_kb, cpu_usage_percent);
-  std::printf("[worker %u] task %u done\n", mWorkerId, task_id);
+  // std::printf("[worker %u] task %u done\n", mWorkerId, task_id);
   mBuff.clear();
 }

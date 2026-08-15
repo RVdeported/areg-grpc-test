@@ -86,7 +86,7 @@ done
 
 # ── validate transport ─────────────────────────────────────────
 TRANSPORT="${TRANSPORT,,}"          # lowercase
-if [[ "$TRANSPORT" != "areg" && "$TRANSPORT" != "grpc" ]]; then
+if [[ "$TRANSPORT" != "areg" && "$TRANSPORT" != "areg_many" && "$TRANSPORT" != "grpc" ]]; then
   die "Invalid transport '$TRANSPORT' — must be 'areg' or 'grpc'"
 fi
 
@@ -100,7 +100,7 @@ else
 fi
 
 # ── launch server ──────────────────────────────────────────────
-if [[ "$TRANSPORT" == "areg" ]]; then
+if [[ "$TRANSPORT" == "areg" || "$TRANSPORT" == "areg_many" ]]; then
   # ── AREG: prepare config, start mtrouter, then start server ──
 
   BIND_ADDRESS="${BIND_ADDRESS:-localhost:8181}"

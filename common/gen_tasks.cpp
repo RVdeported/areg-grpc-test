@@ -30,7 +30,7 @@ static void usage(std::string_view prog)
 int main(int argc, char ** argv)
 {
   using namespace common;
-  constexpr static I MAX_D = 100;
+  constexpr static I MAX_D = 10000;
 
   if (argc < 4)
     usage(argv[0]);

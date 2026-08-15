@@ -43,7 +43,7 @@ void MasterComponent::startup_service_interface(areg::Component & holder)
   gMasterTasks.clear();
 
   mEnqueued.store(mQueue.size(), std::memory_order_relaxed);
-  std::printf("[master] enqueued %zu tasks\n", mQueue.size());
+  // std::printf("[master] enqueued %zu tasks\n", mQueue.size());
 }
 
 void MasterComponent::make_response(uint32_t worker_id)
@@ -53,7 +53,7 @@ void MasterComponent::make_response(uint32_t worker_id)
   if (idx < mQueue.size()) [[likely]]
   {
     auto task = mQueue[idx];
-    std::printf("[master] dispatching task %zu\n", idx);
+    // std::printf("[master] dispatching task %zu\n", idx);
     
     // XXX: Do not care here about excessive copying
     Interface::DArray arr_a(task.a);
@@ -64,7 +64,7 @@ void MasterComponent::make_response(uint32_t worker_id)
   }
   else
   {
-    std::printf("[master] no more tasks — queue exhausted\n");
+    // std::printf("[master] no more tasks — queue exhausted\n");
 
     response_AssignTaskReply(0, {}, {}, 0, 0, 0);
     
@@ -75,7 +75,7 @@ void MasterComponent::make_response(uint32_t worker_id)
 void MasterComponent::request_RegisterWorker()
 {
   auto wid = mNextWorkerId.fetch_add(1, std::memory_order_relaxed);
-  std::printf("[master] registered worker %u\n", wid);
+  // std::printf("[master] registered worker %u\n", wid);
 
   response_RegisterWorkerReply(wid);
 }
@@ -94,7 +94,7 @@ void MasterComponent::request_SubmitTask(uint32_t worker_id, uint32_t task_id,
 {
   size_t ts_src_rec = common::ts();
   (void) mCompleted.fetch_add(1, std::memory_order_relaxed);
-  std::printf("[master] task %u done\n", task_id);
+  // std::printf("[master] task %u done\n", task_id);
 
   common::TaskRecord out{task_id,
                          mQueue[task_id].n,

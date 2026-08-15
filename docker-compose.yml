@@ -1,0 +1,113 @@
+# =============================================================================
+# docker-compose.yml — two-container benchmark (server + client)
+# =============================================================================
+#
+# Standalone (env vars on the command line):
+#   TRANSPORT=grpc PORT=50000 CLIENTS=8 TASKS=100 docker compose up
+#
+# Orchestrated (via docker_bench.py — reads benchmark.ini, loops all combos):
+#   python3 docker_bench.py
+#
+# Shell into a container:
+#   docker compose run --rm --entrypoint bash server
+#
+# Clean up:
+#   docker compose down -v
+
+services:
+
+  # ── server: generates tasks, dispatches work, writes results ──────────────
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_TYPE: Release
+    command:
+      - bash
+      - -c
+      - |
+        set -euo pipefail
+        # Auto-pick port if not explicitly set
+        if [ -z "$${PORT:-}" ]; then
+          if [ "$${TRANSPORT:-areg}" = grpc ]; then PORT=50000; else PORT=8182; fi
+        fi
+        mkdir -p /app/results
+        if [ -n "$${TASK_FILE:-}" ]; then
+          echo "=== server  transport=$$TRANSPORT  port=$$PORT  file=$$TASK_FILE ==="
+          set -- -f "$$TASK_FILE"
+        else
+          echo "=== server  transport=$$TRANSPORT  port=$$PORT  tasks=$$TASKS ==="
+          set -- -n "$$TASKS" --dim-lower "$$DIM_LOWER" --dim-upper "$$DIM_UPPER"
+        fi
+        exec ./start-server.sh \
+          -t "$$TRANSPORT" \
+          "$$@" \
+          -a "0.0.0.0:$$PORT" \
+          -o "results/$${TRANSPORT}_out_$${CLIENTS}.csv"
+    environment:
+      TRANSPORT: ${TRANSPORT:-areg}
+      TASKS:     ${TASKS:-100}
+      TASK_FILE: ${TASK_FILE:-}
+      DIM_LOWER: ${DIM_LOWER:-5}
+      DIM_UPPER: ${DIM_UPPER:-20}
+      PORT:      ${PORT:-8182}
+      CLIENTS:   ${CLIENTS:-1}
+    volumes:
+      - ./results:/app/results
+      - ./tasks:/app/tasks:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          P=$${PORT:-8182}
+          bash -c 'echo >/dev/tcp/localhost/'"$$P"'' 2>/dev/null
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    stop_grace_period: 10s
+
+  # ── client: launches N workers that connect to the server ─────────────────
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_TYPE: Release
+    command:
+      - bash
+      - -c
+      - |
+        set -euo pipefail
+        if [ -z "$${PORT:-}" ]; then
+          if [ "$${TRANSPORT:-areg}" = grpc ]; then PORT=50000; else PORT=8182; fi
+        fi
+        echo "=== client  transport=$$TRANSPORT  clients=$$CLIENTS  → server:$$PORT ==="
+        exec ./start-clients.sh \
+          -t "$$TRANSPORT" \
+          -n "$$CLIENTS" \
+          -a "server:$$PORT"
+    environment:
+      TRANSPORT: ${TRANSPORT:-areg}
+      CLIENTS:   ${CLIENTS:-1}
+      PORT:      ${PORT:-8182}
+    depends_on:
+      server:
+        condition: service_healthy
+        restart: false
+    stop_grace_period: 5s
+
+  # ── optional orchestrator: runs the full Python benchmark suite ───────────
+  runner:
+    profiles:
+      - orchestrate
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_TYPE: Release
+    command: ["python3", "run_benchmark.py"]
+    volumes:
+      - ./results:/app/results
+      - ./benchmark.ini:/app/benchmark.ini:ro

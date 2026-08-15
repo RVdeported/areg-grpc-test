@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AREG_CLIENT="$SCRIPT_DIR/build/bin/areg_client.elf"
+AREG_CLIENT_MANY="$SCRIPT_DIR/build/bin/areg_client_many.elf"
 GRPC_CLIENT="$SCRIPT_DIR/build/grpc-src/grpc-client"
 AREG_CONFIG="$SCRIPT_DIR/areg.init"
 AREG_FINAL_CONFIG="$SCRIPT_DIR/build/bin/config/areg.init"
@@ -61,7 +62,7 @@ done
 
 # ── validate ───────────────────────────────────────────────────
 TRANSPORT="${TRANSPORT,,}"
-if [[ "$TRANSPORT" != "areg" && "$TRANSPORT" != "grpc" ]]; then
+if [[ "$TRANSPORT" != "areg" && "$TRANSPORT" != "areg_many" && "$TRANSPORT" != "grpc" ]]; then
   die "Invalid transport '$TRANSPORT' — must be 'areg' or 'grpc'"
 fi
 
@@ -70,7 +71,7 @@ if [[ "$NUM_CLIENTS" -lt 1 ]]; then
 fi
 
 # ── launch clients ─────────────────────────────────────────────
-if [[ "$TRANSPORT" == "areg" ]]; then
+if [[ "$TRANSPORT" == "areg" || "$TRANSPORT" == "areg_many" ]]; then
   # AREG clients read areg.init from CWD, so cd to project root.
   cd "$SCRIPT_DIR"
   echo "Launching $NUM_CLIENTS AREG client(s) …"
@@ -84,7 +85,10 @@ if [[ "$TRANSPORT" == "areg" ]]; then
 
   echo "Router config written to $AREG_FINAL_CONFIG  ($AREG_HOST:$AREG_PORT)"
 
-
+  if [[ "$TRANSPORT" == "areg_many" ]]; then
+    AREG_CLIENT="$AREG_CLIENT_MANY";
+  fi
+  
   for ((i = 0; i < NUM_CLIENTS; i++)); do
     "$AREG_CLIENT" &
     PIDS+=($!)
