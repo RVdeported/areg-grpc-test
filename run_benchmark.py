@@ -1,14 +1,9 @@
-#!/usr/bin/env python3
 """Benchmark runner for AREG vs gRPC matrix-multiplication.
 
 Delegates server/client lifecycle to the repo's shell scripts
-(``start-server.sh`` / ``start-clients.sh``).  One shared task file is
-generated up front and reused across every (transport, client-count) pair
-so the workload is identical across all runs.
-
+(``start-server.sh`` / ``start-clients.sh``).  
 Usage::
 
-    python3 run_benchmark.py                    # uses ./benchmark.ini
     python3 run_benchmark.py --config my.ini    # custom config
     python3 run_benchmark.py --dry-run          # print the plan only
 """
@@ -157,7 +152,7 @@ def run_benchmark(config_path: Path, dry_run: bool = False) -> None:
 
     # ---- validate ------------------------------------------------------------
     for t in transports:
-        if t not in ("areg", "grpc"):
+        if t not in ("areg", "grpc", "areg_many"):
             raise SystemExit(f"Unknown transport: {t!r}")
 
     local_ip = _get_public_ip() if use_remote else _get_local_ip()
@@ -213,7 +208,7 @@ def run_benchmark(config_path: Path, dry_run: bool = False) -> None:
             print(f"{'─' * 60}")
 
             # Address strings for server and client scripts
-            if transport == "areg":
+            if transport in ["areg", "areg_many"]:
                 server_addr = f"{bind_address}:{areg_port}"
                 # Clients must reach the router at the actual host IP
                 client_addr = f"{local_ip}:{areg_port}"
